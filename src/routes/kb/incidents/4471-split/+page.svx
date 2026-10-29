@@ -1,0 +1,53 @@
+---
+layout: runbook
+title: '#4471 split · three problems, not one'
+owner: yogi100x
+status: living
+reviewed: 2026-10-29
+signature: v1.eyJzdWIiOiIxMTM4IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMzMDkyMzgsImV4cCI6MTc5MzM5NTYzOH0.eq9_JWyOsywSnniyBT-a3uJ00HMKq_B7YgamRdhb10g
+---
+
+<script>
+  import CauseTable from '#lib/kb/CauseTable.svelte';
+  import QueueTimeline from '#lib/kb/QueueTimeline.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+  const signature = metadata.signature;
+</script>
+
+[#4471](/kb/incidents/4471) took in **412 reports** (after dropping 15 rows the ticket export repeats) and was marked known as one issue. They share a symptom, a wrong day. They do not share a cause. There are three problems, each filed as its own ticket.
+
+| Ticket | Problem | Reports |
+|---|---|---|
+| [#1](https://github.com/yogi100x/mega-dev-course/issues/1) | The parser reads dates month first for day-first tenants | 374 |
+| [#2](https://github.com/yogi100x/mega-dev-course/issues/2) | The booking-v3 form hint says `MM/DD/YYYY` to day-first tenants | 33 |
+| [#3](https://github.com/yogi100x/mega-dev-course/issues/3) | Bookings land one day off | 5 |
+
+<Callout kind="warn">
+One queued fix covers 374 of 412 reports. The other 38 would stay broken after it.
+</Callout>
+
+## How the reports were split
+
+By the tenant, not the subject line and not the intake tag. A tenant's locale says whether they write the day first, and their booking form says what the hint under the date field tells them to type. Intake only guessed from the browser: it tagged 23 parser reports as `hint` and 15 hint reports as `parser`.
+
+- **Parser (#1):** a day-first tenant, reported through the app, email, or a booking-v2 form. The parser flips the date.
+- **Hint (#2):** a day-first tenant on booking-v3, reported through the form. The hint tells people to type month first, so the form flips what they meant.
+- **One-day shift (#3):** the desk's five "one-day move" reports. The date is off by one, not swapped. The cause is not confirmed. Time zones are the likely place to look.
+
+## What was merged
+
+<CauseTable ticket={4471} />
+
+The table counts the five one-day reports under the parser, where the desk filed them. They are split out in #3.
+
+## Since April
+
+<QueueTimeline ticket={4471} />
+
+## Lessons
+
+- Subject lines matched, causes did not. [Decision 0001](/kb/decisions/0001-dedupe-by-subject) merges on subject alone, so one wrong date report from any tenant joined the same ticket. A new decision record should replace it with a rule that checks the tenant's locale and form. Do not edit 0001: a new record replaces it.
+- A ticket marked known hides the reports that are not its cause. Count what a fix covers before you mark it.
+
+<RenderStamp {signature} />
